@@ -1,0 +1,53 @@
+name: Publicar uma vez e ocultar apos primeiro download
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publicar-uma-vez.yml'
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${{ github.repository }}/releases/392248626" \
+            -F draft=false >/dev/null
+          echo 'Release publicada.'
+
+  monitorar:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ocultar apos primeiro download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DRAFT=$(gh api "repos/${{ github.repository }}/releases/392248626" --jq '.draft')
+          if [ "$DRAFT" = "true" ]; then
+            echo 'Release ja esta em rascunho; nada a fazer.'
+            exit 0
+          fi
+          COUNT=$(gh api "repos/${{ github.repository }}/releases/assets/575656212" --jq '.download_count')
+          echo "Downloads registrados: $COUNT"
+          if [ "$COUNT" -ge 1 ]; then
+            gh api --method PATCH \
+              -H 'Accept: application/vnd.github+json' \
+              "repos/${{ github.repository }}/releases/392248626" \
+              -F draft=true >/dev/null
+            echo 'Primeiro download detectado. Release voltou para Draft.'
+          fi
