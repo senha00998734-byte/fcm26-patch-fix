@@ -1,0 +1,77 @@
+name: Publicar assets do Frankie
+
+on:
+  workflow_dispatch:
+    inputs:
+      sources_b64:
+        description: JSON base64 com nome=>URL temporaria do Dropbox
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decodificar fontes
+        env:
+          SOURCES_B64: ${{ inputs.sources_b64 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$SOURCES_B64" | base64 -d > /tmp/sources.json
+          jq -e 'type=="object" and length==12' /tmp/sources.json >/dev/null
+          mkdir -p assets
+
+      - name: Baixar 12 arquivos em paralelo
+        run: |
+          set -euo pipefail
+          pids=()
+          while IFS=$'\t' read -r name url; do
+            echo "::add-mask::$url"
+            echo "Iniciando $name"
+            (
+              curl -fL --retry 4 --retry-delay 2 "$url" -o "assets/$name"
+            ) &
+            pids+=("$!")
+          done < <(jq -r 'to_entries[] | [.key,.value] | @tsv' /tmp/sources.json)
+          rc=0
+          for p in "${pids[@]}"; do
+            if ! wait "$p"; then rc=1; fi
+          done
+          exit "$rc"
+
+      - name: Conferir tamanhos
+        run: |
+          set -euo pipefail
+          test "$(stat -c%s 'assets/01-BRFP-26-V3-Parte-1.fifamod')" = "79677617"
+          test "$(stat -c%s 'assets/02-BRFP-26-V3-Parte-2.fifamod')" = "438151620"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part000')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part001')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part002')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part003')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part004')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part005')" = "480000000"
+          test "$(stat -c%s 'assets/03-BRFP-Parte3.part006')" = "380867936"
+          test "$(stat -c%s 'assets/04-FCM-Faces-Overlay.part000')" = "480000000"
+          test "$(stat -c%s 'assets/04-FCM-Faces-Overlay.part001')" = "480000000"
+          test "$(stat -c%s 'assets/04-FCM-Faces-Overlay.part002')" = "452302823"
+
+      - name: Criar ou atualizar release draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view frankie-v1 --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload frankie-v1 assets/* frankie/INSTALAR_FRANKIE_ONLINE.cmd --clobber --repo "${{ github.repository }}"
+          else
+            gh release create frankie-v1 assets/* frankie/INSTALAR_FRANKIE_ONLINE.cmd \
+              --repo "${{ github.repository }}" \
+              --title "FRANKIE FCM + LTA V1" \
+              --notes "Instalador online e arquivos necessários para o Frankie. A release permanece em rascunho até a conferência final." \
+              --draft
+          fi
