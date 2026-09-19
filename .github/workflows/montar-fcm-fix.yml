@@ -1,0 +1,54 @@
+name: Montar FCM Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      part1:
+        description: URL temporaria da parte 1
+        required: true
+        type: string
+      part2:
+        description: URL temporaria da parte 2
+        required: true
+        type: string
+      part3:
+        description: URL temporaria da parte 3
+        required: true
+        type: string
+      part4:
+        description: URL temporaria da parte 4
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  montar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar partes
+        env:
+          P1: ${{ inputs.part1 }}
+          P2: ${{ inputs.part2 }}
+          P3: ${{ inputs.part3 }}
+          P4: ${{ inputs.part4 }}
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 "$P1" -o part00
+          curl -fL --retry 3 "$P2" -o part01
+          curl -fL --retry 3 "$P3" -o part02
+          curl -fL --retry 3 "$P4" -o part03
+
+      - name: Montar e verificar
+        run: |
+          set -euo pipefail
+          cat part00 part01 part02 part03 > "FCM 26 Patch Fix.exe"
+          test "$(stat -c%s 'FCM 26 Patch Fix.exe')" = "934496256"
+          echo "0d978a11cbf46fa27b4c535266edb73bf2d4b2228950f650489401592530563c  FCM 26 Patch Fix.exe" | sha256sum -c -
+
+      - name: Criar release em rascunho
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.0.0 "FCM 26 Patch Fix.exe" --repo "${{ github.repository }}" --title "FCM 26 Patch Fix" --notes "Arquivo verificado por tamanho e SHA-256 antes do upload." --draft
