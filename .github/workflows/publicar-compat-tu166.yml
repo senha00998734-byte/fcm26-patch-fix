@@ -1,0 +1,29 @@
+name: Publicar FCM26 TU166 Compat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'compat-tu166/**'
+      - '.github/workflows/publicar-compat-tu166.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar ZIP
+        run: |
+          cd compat-tu166
+          zip -9 ../FCM26_TU166_COMPAT.zip FCM26_TU166_COMPAT.ps1 INICIAR_FCM26_TU166.cmd LEIA-ME.txt
+      - name: Publicar Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete compat-tu166-v1 -y --cleanup-tag || true
+          gh release create compat-tu166-v1 FCM26_TU166_COMPAT.zip \
+            --title 'FCM26 TU 1.6.6 COMPAT' \
+            --notes 'Kit de compatibilidade/diagnóstico para usar os arquivos FCM que o usuário já possui. Não inclui mods pagos nem altera o conteúdo interno dos fifamod.'
