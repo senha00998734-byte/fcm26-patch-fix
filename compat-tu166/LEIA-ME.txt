@@ -1,0 +1,30 @@
+FCM26 TU 1.6.6 COMPAT
+=====================
+
+Este kit NAO inclui mods pagos e NAO baixa a V5.
+Ele usa somente os arquivos que voce ja possui.
+
+MODO 1 - FCM V1 ORIGINAL
+- Faz backup de FIFAModData/ModData e do cache local do EA SPORTS FC 26.
+- Le os cabecalhos dos seus .fifamod e gera um diagnostico.
+- Prepara a ordem de teste:
+  1. Patch FCM 26 Parte 1
+  2. Patch FCM 26 Parte 2
+  3. Patch FCM 26 FIX (por ultimo / maior prioridade)
+- Tenta abrir o FCM Mod Launcher.
+
+MODO 2 - COMPAT LTA + FCM
+Use se o FCM V1 puro continuar quebrando no TU 1.6.6.
+O script procura os mods LTA/BRFP + FCM Faces Overlay que voce ja possui, copia para Documents\FCM26_TU166_COMPAT\Mods e cria a ordem correta.
+O FIX antigo fica fora neste primeiro teste para evitar conflito.
+
+COMO USAR
+1. Extraia o ZIP.
+2. Clique com o botao direito em INICIAR_FCM26_TU166.cmd e escolha Executar como administrador.
+3. Escolha SIM para testar o FCM V1 original limpo.
+4. Escolha NAO para preparar o fallback LTA + FCM.
+5. No Mod Manager use Delete FIFAMODDATA and launch.
+
+IMPORTANTE
+O kit nao falsifica a versao interna dos mods e nao remove protecoes/licencas.
+Se um recurso do FCM V1 foi alterado pela TU 1.6.6, o diagnostico nao consegue reconstruir esse recurso sem o projeto-fonte ou um FIX compilado para essa TU. O modo LTA + FCM existe justamente para aproveitar o maximo do seu conteudo antigo sobre uma base que ja funciona.
